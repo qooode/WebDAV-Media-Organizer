@@ -24,7 +24,7 @@ This is a web-based application that allows users to access their media files st
 
 ## Installation and Usage:
 
-1. Clone the repository.
+1. Clone the repository or alternatively, you can simply open the application at [https://qooode.github.io/WebDAV-Media-Organizer/](https://qooode.github.io/WebDAV-Media-Organizer/).
 2. Open the `index.html` file in a web browser.
 3. Enter the WebDAV URL, username, and password to log in.
 4. Browse and interact with the media files and directories.
