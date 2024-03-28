@@ -114,154 +114,153 @@
   </style>
 </head>
 <body>
-    <div id="loginForm">
-      <div class="login-content">
-        <h2>WebDAV Login</h2>
-        <div id="errorMessage" style="color: red; margin-bottom: 10px; display: none;"></div>
-        <label for="webdavUrl">WebDAV URL:</label>
-        <input type="text" id="webdavUrl" required>
-        <label>
-          <input type="checkbox" id="showCredentials"> Show Username and Password
-        </label>
-        <div id="credentialsFields" style="display: none;">
-          <label for="username">Username:</label>
-          <input type="text" id="username">
-          <label for="password">Password:</label>
-          <input type="password" id="password">
-        </div>
-        <button onclick="login()">Login</button>
+  <div id="loginForm">
+    <div class="login-content">
+      <h2>WebDAV Login</h2>
+      <div id="errorMessage" style="color: red; margin-bottom: 10px; display: none;"></div>
+      <label for="webdavUrl">WebDAV URL:</label>
+      <input type="text" id="webdavUrl" required>
+      <label>
+        <input type="checkbox" id="showCredentials"> Show Username and Password
+      </label>
+      <div id="credentialsFields" style="display: none;">
+        <label for="username">Username:</label>
+        <input type="text" id="username">
+        <label for="password">Password:</label>
+        <input type="password" id="password">
       </div>
+      <button onclick="login()">Login</button>
     </div>
-  
-    <h1>WebDAV Access</h1>
-    <div id="logoutContainer" style="display: none;">
-      <button onclick="logout()">Logout</button>
-    </div>
-    <div id="navigationButtons"></div>
-    <div id="fileList"></div>
-  
-    <script>
-      let webdavUrl, username, password;
-      let currentDirectory = '';
-      let isLoggedIn = false;
-  
-      function login() {
-        webdavUrl = document.getElementById('webdavUrl').value;
-        username = document.getElementById('username').value;
-        password = document.getElementById('password').value;
-  
-        // Validate input
-        if (!webdavUrl) {
-          showErrorMessage('Please enter a valid WebDAV URL.');
+  </div>
+
+  <h1>WebDAV Access</h1>
+  <div id="logoutContainer" style="display: none;">
+    <button onclick="logout()">Logout</button>
+  </div>
+  <div id="navigationButtons"></div>
+  <div id="fileList"></div>
+
+  <script>
+    let webdavUrl, username, password;
+    let currentDirectory = '';
+    let isLoggedIn = false;
+
+    function login() {
+      webdavUrl = document.getElementById('webdavUrl').value;
+      username = document.getElementById('username').value;
+      password = document.getElementById('password').value;
+
+      // Validate input
+      if (!webdavUrl) {
+        showErrorMessage('Please enter a valid WebDAV URL.');
+        return;
+      }
+
+      // Store the login details in the browser's storage
+      localStorage.setItem('webdavUrl', webdavUrl);
+      localStorage.setItem('username', username);
+      localStorage.setItem('password', password);
+      isLoggedIn = true;
+
+      // Hide the login form and show the logout button
+      document.getElementById('loginForm').style.display = 'none';
+      document.getElementById('logoutContainer').style.display = 'block';
+      listFiles();
+    }
+
+    function logout() {
+      // Clear the stored login details from the browser's storage
+      localStorage.removeItem('webdavUrl');
+      localStorage.removeItem('username');
+      localStorage.removeItem('password');
+      isLoggedIn = false;
+
+      // Show the login form and hide the logout button
+      document.getElementById('loginForm').style.display = 'block';
+      document.getElementById('logoutContainer').style.display = 'none';
+    }
+
+    async function listFiles() {
+      try {
+        // Retrieve the login details from the browser's storage
+        webdavUrl = localStorage.getItem('webdavUrl');
+        username = localStorage.getItem('username');
+        password = localStorage.getItem('password');
+
+        if (!webdavUrl || !username || !password) {
+          // If the login details are not found, show the login form
+          document.getElementById('loginForm').style.display = 'block';
+          document.getElementById('logoutContainer').style.display = 'none';
           return;
         }
-  
-        // Store the login details in the browser's storage
-        localStorage.setItem('webdavUrl', webdavUrl);
-        localStorage.setItem('username', username);
-        localStorage.setItem('password', password);
-        isLoggedIn = true;
-  
-        // Hide the login form and show the logout button
-        document.getElementById('loginForm').style.display = 'none';
-        document.getElementById('logoutContainer').style.display = 'block';
-        listFiles();
-      }
-  
-      function logout() {
-        // Clear the stored login details from the browser's storage
-        localStorage.removeItem('webdavUrl');
-        localStorage.removeItem('username');
-        localStorage.removeItem('password');
-        isLoggedIn = false;
-  
-        // Show the login form and hide the logout button
-        document.getElementById('loginForm').style.display = 'block';
-        document.getElementById('logoutContainer').style.display = 'none';
-      }
-  
-      async function listFiles() {
-        try {
-          // Retrieve the login details from the browser's storage
-          webdavUrl = localStorage.getItem('webdavUrl');
-          username = localStorage.getItem('username');
-          password = localStorage.getItem('password');
-  
-          if (!webdavUrl || !username || !password) {
-            // If the login details are not found, show the login form
-            document.getElementById('loginForm').style.display = 'block';
-            document.getElementById('logoutContainer').style.display = 'none';
-            return;
+
+        let isSubdirectory = currentDirectory !== '';
+
+        showLoadingIndicator();
+        const url = new URL(webdavUrl);
+        url.pathname = `${url.pathname}${currentDirectory ? '/' + currentDirectory : ''}`;
+        const response = await fetch(url.toString(), {
+          method: 'PROPFIND',
+          headers: {
+            'Depth': '1',
+            'Authorization': 'Basic ' + btoa(sanitizeInput(username) + ':' + sanitizeInput(password))
           }
-  
-          showLoadingIndicator();
-          const url = new URL(webdavUrl);
-          url.pathname = `${url.pathname}${currentDirectory ? '/' + currentDirectory : ''}`;
-          const response = await fetch(url.toString(), {
-            method: 'PROPFIND',
-            headers: {
-              'Depth': '1',
-              'Authorization': 'Basic ' + btoa(sanitizeInput(username) + ':' + sanitizeInput(password))
-            }
-          });
-          if (response.ok) {
-            const xml = await response.text();
-            const fileList = document.getElementById('fileList');
-            const navigationButtons = document.getElementById('navigationButtons');
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(xml, 'application/xml');
-            const fileNames = Array.from(doc.getElementsByTagName('D:href'))
-              .map(node => decodeURIComponent(node.textContent.replace(url.origin + '/dav/rddav/', '')))
-              .filter(name => name !== '' && name !== '/');
-  
-            // Generate the "Go Back" button if the user has navigated into a subdirectory
-            navigationButtons.innerHTML = currentDirectory
-              ? `<button onclick="navigateToParentDirectory()">Go Back</button>`
-              : '';
-  
-            if (fileNames.length > 0) {
-              fileList.innerHTML = '<h2>Files:</h2><ul>' + fileNames.map(file => {
-                const fileName = file.replace('/dav/rddav/', '');
-                const isMediaFile = ['mp3', 'mp4', 'avi', 'mov', 'webm', 'mkv'].some(ext => fileName.toLowerCase().endsWith(`.${ext}`));
-                return `
-                  <li>
-                    ${isMediaFile ? `<button onclick="showPlayerOptions('${sanitizeInput(fileName.replace('/dav/rddav/', ''))}')">Play</button>` : ''}
-                    <a href="#" onclick="openFileWithInfuse('${sanitizeInput(fileName.replace('/dav/rddav/', ''))}')">
-                      ${sanitizeInput(fileName.replace('/dav/rddav/', ''))}
-                    </a>
-                  </li>
-                `;
-              }).join('') + '</ul>';
-            } else {
-              fileList.innerHTML = '<p>The WebDAV directory is empty.</p>';
-            }
-          } else {
-            handleError(response);
-          }
-        } catch (error) {
-          handleError(error);
-        } finally {
-          hideLoadingIndicator();
-        }
-      }
-  
-      function handleError(error) {
-        if (error instanceof Response) {
-          if (error.status === 401) {
-            showErrorMessage('Invalid username or password. Please check your credentials.');
-          } else {
-            showErrorMessage(`Error accessing WebDAV server. Status code: ${error.status} - ${error.statusText}`);
-          }
+        });
+
+        if (response.ok) {
+          const xml = await response.text();
+          const fileList = document.getElementById('fileList');
+          const navigationButtons = document.getElementById('navigationButtons');
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(xml, 'application/xml');
+          const fileNames = Array.from(doc.getElementsByTagName('D:href'))
+            .map(node => decodeURIComponent(node.textContent.replace(url.origin + '/dav/rddav/', '')))
+            .filter(name => name !== '' && name !== '/');
+
+          // Generate the "Go Back" button if the user has navigated into a subdirectory
+          navigationButtons.innerHTML = currentDirectory
+            ? `<button onclick="navigateToParentDirectory()">Go Back</button>`
+            : '';
+
+          fileList.innerHTML = '<h2>Files:</h2><ul>' + fileNames.map(file => {
+            const fileName = file.replace('/dav/rddav/', '');
+            const isMediaFile = ['mp3', 'mp4', 'avi', 'mov', 'webm', 'mkv'].some(ext => fileName.toLowerCase().endsWith(`.${ext}`));
+            return `
+              <li>
+                ${isMediaFile ? `<button onclick="showPlayerOptions('${sanitizeInput(fileName.replace('/dav/rddav/', ''))}')">Play</button>` : ''}
+                ${isSubdirectory && isMediaFile ? sanitizeInput(fileName.replace('/dav/rddav/', '')) : `<a href="#" onclick="navigateToDirectory('${sanitizeInput(fileName.replace('/dav/rddav/', ''))}')">
+                  ${sanitizeInput(fileName.replace('/dav/rddav/', ''))}
+                </a>`}
+              </li>
+            `;
+          }).join('') + '</ul>';
         } else {
-          showErrorMessage(`Error: ${error.message}`);
+          handleError(response);
         }
+      } catch (error) {
+        handleError(error);
+      } finally {
+        hideLoadingIndicator();
       }
-  
-      function showErrorMessage(message) {
-        const errorMessageElement = document.getElementById('errorMessage');
-        errorMessageElement.textContent = message;
-        errorMessageElement.style.display = 'block';
+    }
+
+    function handleError(error) {
+      if (error instanceof Response) {
+        if (error.status === 401) {
+          showErrorMessage('Invalid username or password. Please check your credentials.');
+        } else {
+          showErrorMessage(`Error accessing WebDAV server. Status code: ${error.status} - ${error.statusText}`);
+        }
+      } else {
+        showErrorMessage(`Error: ${error.message}`);
       }
+    }
+
+    function showErrorMessage(message) {
+      const errorMessageElement = document.getElementById('errorMessage');
+      errorMessageElement.textContent = message;
+      errorMessageElement.style.display = 'block';
+    }
 
     async function openFileWithInfuse(fileName) {
       try {
@@ -280,6 +279,19 @@
           const infuseUrl = `infuse://x-callback-url/play?url=${fileUrl.toString()}`;
           window.open(infuseUrl, '_blank');
         }
+      } catch (error) {
+        handleError(error);
+      }
+    }
+
+    async function navigateToDirectory(directoryName) {
+      try {
+        if (directoryName.endsWith('/')) {
+          currentDirectory = directoryName.slice(0, -1);
+        } else {
+          currentDirectory = directoryName;
+        }
+        await listFiles();
       } catch (error) {
         handleError(error);
       }
