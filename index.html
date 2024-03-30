@@ -182,7 +182,7 @@
             </select>
           </div>
           <div class="mb-3">
-            <label for="webdavServer" class="form-label">WebDAV Server IP/Domain:</label>
+            <label for="webdavServer" class="form-label">WebDAV Server:</label>
             <input type="text" class="form-control" id="webdavServer" required>
           </div>
           <div class="mb-3">
@@ -190,7 +190,7 @@
             <input type="number" class="form-control" id="webdavPort">
           </div>
           <div class="mb-3">
-            <label for="webdavPath" class="form-label">WebDAV Path (optional):</label>
+            <label for="webdavPath" class="form-label">WebDAV Path without the first "/" (optional):</label>
             <input type="text" class="form-control" id="webdavPath">
           </div>
           <div class="mb-3">
@@ -276,40 +276,41 @@
     }
 
     async function listFiles() {
-      try {
-        // Retrieve the login details from the browser's storage
-        webdavUrl = localStorage.getItem('webdavUrl');
-        username = localStorage.getItem('username');
-        password = localStorage.getItem('password');
+  try {
+    // Retrieve the login details from the browser's storage
+    webdavUrl = localStorage.getItem('webdavUrl');
+    username = localStorage.getItem('username');
+    password = localStorage.getItem('password');
 
-        if (!webdavUrl || !username || !password) {
-          // If the login details are not found, show the login form
-          document.getElementById('loginForm').style.display = 'block';
-          document.getElementById('logoutContainer').style.display = 'none';
-          return;
-        }
+    if (!webdavUrl || !username || !password) {
+      // If the login details are not found, show the login form
+      document.getElementById('loginForm').style.display = 'block';
+      document.getElementById('logoutContainer').style.display = 'none';
+      return;
+    }
 
-        let isSubdirectory = currentDirectory !== '';
+    let isSubdirectory = currentDirectory !== '';
 
-        showLoadingIndicator();
-        const url = new URL(webdavUrl);
-        url.pathname = `${url.pathname}${currentDirectory ? '/' + currentDirectory : ''}`;
-        const response = await fetch(url.toString(), {
-          method: 'PROPFIND',
-          headers: {
-            'Depth': '1',
-            'Authorization': 'Basic ' + btoa(sanitizeInput(username) + ':' + sanitizeInput(password))
-          }
-        });
+    showLoadingIndicator();
+    const response = await fetch(webdavUrl + (currentDirectory ? '/' + currentDirectory : ''), {
+      method: 'PROPFIND',
+      headers: {
+        'Depth': '1',
+        'Authorization': 'Basic ' + btoa(sanitizeInput(username) + ':' + sanitizeInput(password))
+      }
+    });
 
-        if (response.ok) {
+    if (response.ok) {
+      console.log('PROPFIND request successful');
       const xml = await response.text();
-      const fileList = document.getElementById('fileList');
-      const navigationButtons = document.getElementById('navigationButtons');
+      console.log('Raw XML response:', xml);
       const parser = new DOMParser();
       const doc = parser.parseFromString(xml, 'application/xml');
+      console.log('Parsed XML document:', doc);
+      const fileList = document.getElementById('fileList');
+      const navigationButtons = document.getElementById('navigationButtons');
       const fileNames = Array.from(doc.getElementsByTagName('D:href'))
-        .map(node => decodeURIComponent(node.textContent.replace(url.origin + '/dav/rddav/', '')))
+        .map(node => decodeURIComponent(node.textContent.replace(webdavUrl + '/', '')))
         .filter(name => name !== '' && name !== '/');
 
       // Generate the "Go Back" button if the user has navigated into a subdirectory
@@ -317,53 +318,72 @@
         ? `<button class="btn btn-primary" onclick="navigateToParentDirectory()">Go Back</button>`
         : '';
 
+      let firstItemIsDirectory = false;
       fileList.innerHTML = fileNames.map((file, index) => {
         const fileName = file.replace('/dav/rddav/', '');
         const isMediaFile = ['mp3', 'mp4', 'avi', 'mov', 'webm', 'mkv'].some(ext => fileName.toLowerCase().endsWith(`.${ext}`));
         const isDirectory = file.endsWith('/');
-        const isCurrentDirectory = isSubdirectory && index === 0;
-        const fileNameOnly = isSubdirectory ? fileName.replace(/^.*[\\\/]/, '') : fileName;
 
-        // Skip the first item if it's the root directory
-        if (index === 0 && !isSubdirectory) {
-          return '';
-        }
-
-        return `
-          <div class="col${isSubdirectory ? ' directory-view' : ''}">
-            <div class="card h-100">
-              <div class="card-body">
-                ${isMediaFile ? `<button class="btn btn-primary" onclick="showPlayerOptions('${sanitizeInput(file)}')">Play</button> <span class="ms-2">${sanitizeInput(fileNameOnly)}</span>` : (isDirectory ? `<${isCurrentDirectory ? 'span' : 'a href="#"'} class="card-link${isCurrentDirectory ? ' current-directory' : ''}" onclick="${isCurrentDirectory ? '' : `navigateToDirectory('${sanitizeInput(fileName.replace('/dav/rddav/', ''))}', event)`}">${sanitizeInput(fileName.replace('/dav/rddav/', ''))}</${isCurrentDirectory ? 'span' : 'a'}>` : `<a href="#" class="card-link" onclick="navigateToDirectory('${sanitizeInput(fileName.replace('/dav/rddav/', ''))}', event)">${sanitizeInput(fileName.replace('/dav/rddav/', ''))}</a>`)}
+        if (isDirectory) {
+          firstItemIsDirectory = true;
+          return `
+            <div class="col${isSubdirectory ? ' directory-view' : ''}">
+              <div class="card h-100">
+                <div class="card-body">
+                  <a href="#" class="card-link" onclick="navigateToDirectory('${sanitizeInput(fileName)}', event)">${sanitizeInput(fileName)}</a>
+                </div>
               </div>
             </div>
-          </div>
-        `;
+          `;
+        } else if (index !== 0 || firstItemIsDirectory) {
+          return `
+            <div class="col${isSubdirectory ? ' directory-view' : ''}">
+              <div class="card h-100">
+                <div class="card-body">
+                  <button class="btn btn-primary" onclick="showPlayerOptions('${sanitizeInput(file)}')">Play</button> <span class="ms-2">${sanitizeInput(fileName)}</span>
+                </div>
+              </div>
+            </div>
+          `;
+        } else {
+          return '';
+        }
       }).join('');
 
       // Add the 'directory-view' class to the file list container when inside a directory
       fileList.classList.toggle('directory-view', isSubdirectory);
     } else {
+      console.error('PROPFIND request failed');
       handleError(response);
     }
   } catch (error) {
+    console.error('Unexpected error:', error);
     handleError(error);
   } finally {
     hideLoadingIndicator();
   }
 }
 
+function handleError(error) {
+  let errorMessage = 'An unknown error occurred.';
 
-    function handleError(error) {
-      if (error instanceof Response) {
-        if (error.status === 401) {
-          showErrorMessage('Invalid username or password. Please check your credentials.');
-        } else {
-          showErrorMessage(`Error accessing WebDAV server. Status code: ${error.status} - ${error.statusText}`);
-        }
-      } else {
-        showErrorMessage(`Error: ${error.message}`);
-      }
+  if (error instanceof Response) {
+    errorMessage = `Error accessing WebDAV server. Status code: ${error.status} - ${error.statusText}`;
+    if (error.status === 401) {
+      errorMessage = 'Invalid username or password. Please check your credentials.';
+    } else if (error.status === 404) {
+      errorMessage = 'The requested resource was not found.';
+    } else if (error.status === 500) {
+      errorMessage = 'The WebDAV server encountered an internal error.';
     }
+  } else if (error instanceof Error) {
+    errorMessage = error.message;
+  }
+
+  const errorMessageElement = document.getElementById('errorMessage');
+  errorMessageElement.textContent = errorMessage;
+  errorMessageElement.style.display = 'block';
+}
 
     function showErrorMessage(message) {
       const errorMessageElement = document.getElementById('errorMessage');
