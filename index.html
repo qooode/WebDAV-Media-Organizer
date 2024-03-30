@@ -2,13 +2,19 @@
 <html>
 <head>
   <title>WebDAV Access</title>
+
+    <!-- Bootstrap CSS CDN -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css">
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     /* Add responsive styles and accessibility-focused CSS */
     body {
-      font-family: Arial, sans-serif;
+      font-family: Satoshi Variable,sans-serif;
       margin: 0;
       padding: 20px;
+      background: #111111;
+      color: #FAFAFA;
     }
     h1 {
       margin-top: 0;
@@ -24,18 +30,25 @@
       margin-bottom: 10px;
     }
     #fileList a {
-      color: blue;
+      color: #FAFAFA;
       text-decoration: none;
     }
     #fileList a:hover {
       text-decoration: underline;
     }
     .loading-indicator {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100px;
-    }
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.8);
+  z-index: 1000;
+}
     .player-options-modal {
       position: fixed;
       z-index: 1;
@@ -50,12 +63,19 @@
       align-items: center;
     }
     .player-options-content {
-      background-color: #fefefe;
+      background-color: #0a0a0a;
       padding: 20px;
-      border: 1px solid #888;
+      border: 1px solid #262626;
+      border-radius: 0.75rem;
       width: 80%;
       max-width: 600px;
     }
+
+.player-options-content h3 {
+  overflow-wrap: break-word;
+  max-width: 100%;
+}
+
     .player-options-content button {
       display: block;
       width: 100%;
@@ -98,48 +118,100 @@
       max-width: 400px;
     }
     #logoutContainer {
-      position: fixed;
       top: 20px;
       right: 20px;
       z-index: 999;
     }
     #logoutContainer button {
-      background-color: #f44336;
-      color: white;
+      background-color: #fefefe;
+      color: #0a0a0a;
       padding: 8px 16px;
       border: none;
       border-radius: 4px;
       cursor: pointer;
     }
+    .directory-view .col {
+  flex: 0 0 auto;
+  width: 100%;
+}
+.card {
+    background-color: #0a0a0a;
+    border: 1px solid #262626;
+    border-radius: 0.75rem;
+}
+.btn-primary {
+    color: #0a0a0a;
+    background-color: #fefefe;
+    border-color: #262626;
+}
   </style>
 </head>
 <body>
-  <div id="loginForm">
-    <div class="login-content">
-      <h2>WebDAV Login</h2>
-      <div id="errorMessage" style="color: red; margin-bottom: 10px; display: none;"></div>
-      <label for="webdavUrl">WebDAV URL:</label>
-      <input type="text" id="webdavUrl" required>
-      <label>
-        <input type="checkbox" id="showCredentials"> Show Username and Password
-      </label>
-      <div id="credentialsFields" style="display: none;">
-        <label for="username">Username:</label>
-        <input type="text" id="username">
-        <label for="password">Password:</label>
-        <input type="password" id="password">
+   <!-- Navbar -->
+   <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+      <a class="navbar-brand" href="#">WebDAV Access</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item" id="logoutContainer" style="display: none;">
+            <button class="btn btn-danger" onclick="logout()">Logout</button>
+          </li>
+        </ul>
       </div>
-      <button onclick="login()">Login</button>
     </div>
+  </nav>
+
+  <!-- Main Content -->
+  <div class="container my-5">
+    <div id="loginForm" class="row justify-content-center">
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-body">
+            <h2 class="card-title">WebDAV Login</h2>
+            <div id="errorMessage" class="text-danger mb-3" style="display: none;"></div>
+            <div class="mb-3">
+              <label for="webdavUrl" class="form-label">WebDAV URL:</label>
+              <input type="text" class="form-control" id="webdavUrl" required>
+            </div>
+            <div class="form-check mb-3">
+              <input class="form-check-input" type="checkbox" id="showCredentials">
+              <label class="form-check-label" for="showCredentials">Show Username and Password</label>
+            </div>
+            <div id="credentialsFields" class="mb-3" style="display: none;">
+              <div class="mb-3">
+                <label for="username" class="form-label">Username:</label>
+                <input type="text" class="form-control" id="username">
+              </div>
+              <div class="mb-3">
+                <label for="password" class="form-label">Password:</label>
+                <input type="password" class="form-control" id="password">
+              </div>
+            </div>
+            <button class="btn btn-primary" onclick="login()">Login</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="logoutContainer" class="text-end mb-3" style="display: none;">
+      <button class="btn btn-danger" onclick="logout()">Logout</button>
+    </div>
+
+    <div id="navigationButtons" class="mb-3"></div>
+    <div id="fileList" class="row row-cols-1 row-cols-sm-2 row-cols-md-4 g-4"></div>
   </div>
 
-  <h1>WebDAV Access</h1>
-  <div id="logoutContainer" style="display: none;">
-    <button onclick="logout()">Logout</button>
-  </div>
-  <div id="navigationButtons"></div>
-  <div id="fileList"></div>
+  <!-- Footer -->
+  <footer class="bg-dark text-light py-3">
+    <div class="container text-center">
+      &copy; 2023 WebDAV Access. All rights reserved.
+    </div>
+  </footer>
 
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     let webdavUrl, username, password;
     let currentDirectory = '';
@@ -208,41 +280,55 @@
         });
 
         if (response.ok) {
-          const xml = await response.text();
-          const fileList = document.getElementById('fileList');
-          const navigationButtons = document.getElementById('navigationButtons');
-          const parser = new DOMParser();
-          const doc = parser.parseFromString(xml, 'application/xml');
-          const fileNames = Array.from(doc.getElementsByTagName('D:href'))
-            .map(node => decodeURIComponent(node.textContent.replace(url.origin + '/dav/rddav/', '')))
-            .filter(name => name !== '' && name !== '/');
+      const xml = await response.text();
+      const fileList = document.getElementById('fileList');
+      const navigationButtons = document.getElementById('navigationButtons');
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(xml, 'application/xml');
+      const fileNames = Array.from(doc.getElementsByTagName('D:href'))
+        .map(node => decodeURIComponent(node.textContent.replace(url.origin + '/dav/rddav/', '')))
+        .filter(name => name !== '' && name !== '/');
 
-          // Generate the "Go Back" button if the user has navigated into a subdirectory
-          navigationButtons.innerHTML = currentDirectory
-            ? `<button onclick="navigateToParentDirectory()">Go Back</button>`
-            : '';
+      // Generate the "Go Back" button if the user has navigated into a subdirectory
+      navigationButtons.innerHTML = currentDirectory
+        ? `<button class="btn btn-primary" onclick="navigateToParentDirectory()">Go Back</button>`
+        : '';
 
-          fileList.innerHTML = '<h2>Files:</h2><ul>' + fileNames.map(file => {
-            const fileName = file.replace('/dav/rddav/', '');
-            const isMediaFile = ['mp3', 'mp4', 'avi', 'mov', 'webm', 'mkv'].some(ext => fileName.toLowerCase().endsWith(`.${ext}`));
-            return `
-              <li>
-                ${isMediaFile ? `<button onclick="showPlayerOptions('${sanitizeInput(fileName.replace('/dav/rddav/', ''))}')">Play</button>` : ''}
-                ${isSubdirectory && isMediaFile ? sanitizeInput(fileName.replace('/dav/rddav/', '')) : `<a href="#" onclick="navigateToDirectory('${sanitizeInput(fileName.replace('/dav/rddav/', ''))}')">
-                  ${sanitizeInput(fileName.replace('/dav/rddav/', ''))}
-                </a>`}
-              </li>
-            `;
-          }).join('') + '</ul>';
-        } else {
-          handleError(response);
+      fileList.innerHTML = fileNames.map((file, index) => {
+        const fileName = file.replace('/dav/rddav/', '');
+        const isMediaFile = ['mp3', 'mp4', 'avi', 'mov', 'webm', 'mkv'].some(ext => fileName.toLowerCase().endsWith(`.${ext}`));
+        const isDirectory = file.endsWith('/');
+        const isCurrentDirectory = isSubdirectory && index === 0;
+        const fileNameOnly = isSubdirectory ? fileName.replace(/^.*[\\\/]/, '') : fileName;
+
+        // Skip the first item if it's the root directory
+        if (index === 0 && !isSubdirectory) {
+          return '';
         }
-      } catch (error) {
-        handleError(error);
-      } finally {
-        hideLoadingIndicator();
-      }
+
+        return `
+          <div class="col${isSubdirectory ? ' directory-view' : ''}">
+            <div class="card h-100">
+              <div class="card-body">
+                ${isMediaFile ? `<button class="btn btn-primary" onclick="showPlayerOptions('${sanitizeInput(file)}')">Play</button> <span class="ms-2">${sanitizeInput(fileNameOnly)}</span>` : (isDirectory ? `<${isCurrentDirectory ? 'span' : 'a href="#"'} class="card-link${isCurrentDirectory ? ' current-directory' : ''}" onclick="${isCurrentDirectory ? '' : `navigateToDirectory('${sanitizeInput(fileName.replace('/dav/rddav/', ''))}', event)`}">${sanitizeInput(fileName.replace('/dav/rddav/', ''))}</${isCurrentDirectory ? 'span' : 'a'}>` : `<a href="#" class="card-link" onclick="navigateToDirectory('${sanitizeInput(fileName.replace('/dav/rddav/', ''))}', event)">${sanitizeInput(fileName.replace('/dav/rddav/', ''))}</a>`)}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Add the 'directory-view' class to the file list container when inside a directory
+      fileList.classList.toggle('directory-view', isSubdirectory);
+    } else {
+      handleError(response);
     }
+  } catch (error) {
+    handleError(error);
+  } finally {
+    hideLoadingIndicator();
+  }
+}
+
 
     function handleError(error) {
       if (error instanceof Response) {
@@ -263,89 +349,99 @@
     }
 
     async function openFileWithInfuse(fileName) {
-      try {
-        if (fileName.endsWith('/')) {
-          currentDirectory = fileName.slice(0, -1);
-          await listFiles();
-        } else {
-          let fileUrl;
-          if (fileName.startsWith(currentDirectory)) {
-            fileUrl = new URL(`${webdavUrl}/${fileName}`, webdavUrl);
-          } else {
-            fileUrl = new URL(`${webdavUrl}/${currentDirectory ? currentDirectory + '/' : ''}${fileName}`, webdavUrl);
-          }
-          fileUrl.username = username;
-          fileUrl.password = password;
-          const infuseUrl = `infuse://x-callback-url/play?url=${fileUrl.toString()}`;
-          window.open(infuseUrl, '_blank');
-        }
-      } catch (error) {
-        handleError(error);
-      }
-    }
-
-    async function navigateToDirectory(directoryName) {
-      try {
-        if (directoryName.endsWith('/')) {
-          currentDirectory = directoryName.slice(0, -1);
-        } else {
-          currentDirectory = directoryName;
-        }
-        await listFiles();
-      } catch (error) {
-        handleError(error);
-      }
-    }
-
-    function showPlayerOptions(fileName) {
-      const playerOptionsModal = document.createElement('div');
-      playerOptionsModal.classList.add('player-options-modal');
-      playerOptionsModal.innerHTML = `
-        <div class="player-options-content">
-          <h3>Choose a player for "${fileName}"</h3>
-          <button onclick="openFileWithInfuse('${sanitizeInput(fileName)}')">Open with Infuse</button>
-          <button onclick="openFileWithVLC('${sanitizeInput(fileName)}')">Open with VLC</button>
-          <button onclick="openFileInBrowser('${sanitizeInput(fileName)}')">Play in browser</button>
-          <button class="close-button" onclick="closePlayerOptionsModal()">Close</button>
-        </div>
-      `;
-      document.body.appendChild(playerOptionsModal);
-    }
-
-    function openFileWithVLC(fileName) {
+  try {
+    if (fileName.endsWith('/')) {
+      currentDirectory = fileName.slice(0, -1);
+      await listFiles();
+    } else {
       let fileUrl;
+      const fileNameWithoutPrefix = fileName.replace('/dav/rddav/', '');
       if (fileName.startsWith(currentDirectory)) {
-        fileUrl = new URL(`${webdavUrl}/${fileName}`, webdavUrl);
+        fileUrl = new URL(`${webdavUrl}/${fileNameWithoutPrefix}`, webdavUrl);
       } else {
-        fileUrl = new URL(`${webdavUrl}/${currentDirectory ? currentDirectory + '/' : ''}${fileName}`, webdavUrl);
+        fileUrl = new URL(`${webdavUrl}/${fileNameWithoutPrefix}`, webdavUrl);
       }
       fileUrl.username = username;
       fileUrl.password = password;
-      const vlcUrl = `vlc://${fileUrl.toString()}`;
-      window.open(vlcUrl, '_blank');
-      closePlayerOptionsModal();
+      const infuseUrl = `infuse://x-callback-url/play?url=${fileUrl.toString()}`;
+      window.open(infuseUrl, '_blank');
     }
+  } catch (error) {
+    handleError(error);
+  }
+}
 
-    function openFileInBrowser(fileName) {
-      let fileUrl;
-      if (fileName.startsWith(currentDirectory)) {
-        fileUrl = new URL(`${webdavUrl}/${fileName}`, webdavUrl);
-      } else {
-        fileUrl = new URL(`${webdavUrl}/${currentDirectory ? currentDirectory + '/' : ''}${fileName}`, webdavUrl);
-      }
-      fileUrl.username = username;
-      fileUrl.password = password;
-      const playerOptionsModal = document.querySelector('.player-options-modal');
-      playerOptionsModal.innerHTML = `
-        <div class="player-options-content">
-          <h3>Playing "${fileName}"</h3>
-          <div class="media-player-container">
-            ${fileName.endsWith('.mp3') ? `<audio src="${fileUrl.toString()}" controls></audio>` : `<video src="${fileUrl.toString()}" controls></video>`}
-          </div>
-          <button class="close-button" onclick="closePlayerOptionsModal()">Close</button>
-        </div>
-      `;
+    async function navigateToDirectory(directoryName, event) {
+  try {
+    event.preventDefault(); // Prevent the page from scrolling to the top
+    if (directoryName.endsWith('/')) {
+      currentDirectory = directoryName.slice(0, -1);
+    } else {
+      currentDirectory = directoryName;
     }
+    showLoadingIndicator(); // Show the loading indicator
+    await listFiles();
+    hideLoadingIndicator(); // Hide the loading indicator
+  } catch (error) {
+    handleError(error);
+  }
+}
+
+function showPlayerOptions(fileName) {
+  const playerOptionsModal = document.createElement('div');
+  playerOptionsModal.classList.add('player-options-modal');
+
+  // Extract the file name from the full path
+  const fileNameOnly = fileName.replace(/^.*[\\\/]/, '');
+
+  playerOptionsModal.innerHTML = `
+    <div class="player-options-content">
+      <h3>${sanitizeInput(fileNameOnly)}</h3>
+      <button onclick="openFileWithInfuse('${sanitizeInput(fileName)}')">Open with Infuse</button>
+      <button onclick="openFileWithVLC('${sanitizeInput(fileName)}')">Open with VLC</button>
+      <button onclick="openFileInBrowser('${sanitizeInput(fileName)}')">Play in browser</button>
+      <button class="close-button" onclick="closePlayerOptionsModal()">Close</button>
+    </div>
+  `;
+  document.body.appendChild(playerOptionsModal);
+}
+
+function openFileWithVLC(fileName) {
+  let fileUrl;
+  const fileNameWithoutPrefix = fileName.replace('/dav/rddav/', '');
+  if (fileName.startsWith(currentDirectory)) {
+    fileUrl = new URL(`${webdavUrl}/${fileNameWithoutPrefix}`, webdavUrl);
+  } else {
+    fileUrl = new URL(`${webdavUrl}/${fileNameWithoutPrefix}`, webdavUrl);
+  }
+  fileUrl.username = username;
+  fileUrl.password = password;
+  const vlcUrl = `vlc://${fileUrl.toString()}`;
+  window.open(vlcUrl, '_blank');
+  closePlayerOptionsModal();
+}
+
+function openFileInBrowser(fileName) {
+  let fileUrl;
+  const fileNameWithoutPrefix = fileName.replace('/dav/rddav/', '');
+  if (fileName.startsWith(currentDirectory)) {
+    fileUrl = new URL(`${webdavUrl}/${fileNameWithoutPrefix}`, webdavUrl);
+  } else {
+    fileUrl = new URL(`${webdavUrl}/${fileNameWithoutPrefix}`, webdavUrl);
+  }
+  fileUrl.username = username;
+  fileUrl.password = password;
+  const playerOptionsModal = document.querySelector('.player-options-modal');
+  playerOptionsModal.innerHTML = `
+    <div class="player-options-content">
+      <h3>${sanitizeInput(fileName)}</h3>
+      <div class="media-player-container">
+        ${fileName.endsWith('.mp3') ? `<audio src="${fileUrl.toString()}" controls></audio>` : `<video src="${fileUrl.toString()}" controls></video>`}
+      </div>
+      <button class="close-button" onclick="closePlayerOptionsModal()">Close</button>
+    </div>
+  `;
+}
 
     function closePlayerOptionsModal() {
       const playerOptionsModal = document.querySelector('.player-options-modal');
