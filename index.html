@@ -166,35 +166,46 @@
 
   <!-- Main Content -->
   <div class="container my-5">
-    <div id="loginForm" class="row justify-content-center">
-      <div class="col-md-6">
-        <div class="card">
-          <div class="card-body">
-            <h2 class="card-title">WebDAV Login</h2>
-            <div id="errorMessage" class="text-danger mb-3" style="display: none;"></div>
-            <div class="mb-3">
-              <label for="webdavUrl" class="form-label">WebDAV URL:</label>
-              <input type="text" class="form-control" id="webdavUrl" required>
-            </div>
-            <div class="form-check mb-3">
-              <input class="form-check-input" type="checkbox" id="showCredentials">
-              <label class="form-check-label" for="showCredentials">Show Username and Password</label>
-            </div>
-            <div id="credentialsFields" class="mb-3" style="display: none;">
-              <div class="mb-3">
-                <label for="username" class="form-label">Username:</label>
-                <input type="text" class="form-control" id="username">
-              </div>
-              <div class="mb-3">
-                <label for="password" class="form-label">Password:</label>
-                <input type="password" class="form-control" id="password">
-              </div>
-            </div>
-            <button class="btn btn-primary" onclick="login()">Login</button>
+<!-- Login Form -->
+<!-- Login Form -->
+<div id="loginForm" class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-body">
+          <h2 class="card-title">WebDAV Login</h2>
+          <div id="errorMessage" class="text-danger mb-3" style="display: none;"></div>
+          <div class="mb-3">
+            <label for="webdavProtocol" class="form-label">WebDAV Protocol:</label>
+            <select class="form-control" id="webdavProtocol">
+              <option value="http">HTTP</option>
+              <option value="https">HTTPS</option>
+            </select>
           </div>
+          <div class="mb-3">
+            <label for="webdavServer" class="form-label">WebDAV Server IP/Domain:</label>
+            <input type="text" class="form-control" id="webdavServer" required>
+          </div>
+          <div class="mb-3">
+            <label for="webdavPort" class="form-label">WebDAV Port (optional):</label>
+            <input type="number" class="form-control" id="webdavPort">
+          </div>
+          <div class="mb-3">
+            <label for="webdavPath" class="form-label">WebDAV Path (optional):</label>
+            <input type="text" class="form-control" id="webdavPath">
+          </div>
+          <div class="mb-3">
+            <label for="username" class="form-label">Username:</label>
+            <input type="text" class="form-control" id="username" required>
+          </div>
+          <div class="mb-3">
+            <label for="password" class="form-label">Password:</label>
+            <input type="password" class="form-control" id="password" required>
+          </div>
+          <button class="btn btn-primary" onclick="login()">Login</button>
         </div>
       </div>
     </div>
+  </div>
 
     <div id="logoutContainer" class="text-end mb-3" style="display: none;">
       <button class="btn btn-danger" onclick="logout()">Logout</button>
@@ -218,27 +229,39 @@
     let isLoggedIn = false;
 
     function login() {
-      webdavUrl = document.getElementById('webdavUrl').value;
-      username = document.getElementById('username').value;
-      password = document.getElementById('password').value;
+  const webdavProtocol = document.getElementById('webdavProtocol').value;
+  const webdavServer = document.getElementById('webdavServer').value;
+  const webdavPort = document.getElementById('webdavPort').value;
+  const webdavPath = document.getElementById('webdavPath').value;
+  const username = document.getElementById('username').value;
+  const password = document.getElementById('password').value;
 
-      // Validate input
-      if (!webdavUrl) {
-        showErrorMessage('Please enter a valid WebDAV URL.');
-        return;
-      }
+  // Validate input
+  if (!webdavServer) {
+    showErrorMessage('Please enter a valid WebDAV server IP/domain.');
+    return;
+  }
 
-      // Store the login details in the browser's storage
-      localStorage.setItem('webdavUrl', webdavUrl);
-      localStorage.setItem('username', username);
-      localStorage.setItem('password', password);
-      isLoggedIn = true;
+  // Construct the WebDAV URL
+  let webdavUrl = `${webdavProtocol}://${webdavServer}`;
+  if (webdavPort) {
+    webdavUrl += `:${webdavPort}`;
+  }
+  if (webdavPath) {
+    webdavUrl += `/${webdavPath}`;
+  }
 
-      // Hide the login form and show the logout button
-      document.getElementById('loginForm').style.display = 'none';
-      document.getElementById('logoutContainer').style.display = 'block';
-      listFiles();
-    }
+  // Store the login details in the browser's storage
+  localStorage.setItem('webdavUrl', webdavUrl);
+  localStorage.setItem('username', username);
+  localStorage.setItem('password', password);
+  isLoggedIn = true;
+
+  // Hide the login form and show the logout button
+  document.getElementById('loginForm').style.display = 'none';
+  document.getElementById('logoutContainer').style.display = 'block';
+  listFiles();
+}
 
     function logout() {
       // Clear the stored login details from the browser's storage
@@ -493,10 +516,6 @@ function openFileInBrowser(fileName) {
     function sanitizeInput(input) {
       return input.replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
-
-    document.getElementById('showCredentials').addEventListener('change', () => {
-      document.getElementById('credentialsFields').style.display = document.getElementById('showCredentials').checked ? 'block' : 'none';
-    });
 
     // Check for cached login details on page load
     if (localStorage.getItem('webdavUrl') && localStorage.getItem('username') && localStorage.getItem('password')) {
