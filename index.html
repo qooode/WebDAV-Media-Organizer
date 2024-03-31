@@ -243,6 +243,18 @@
     username = document.getElementById('username').value;
     password = document.getElementById('password').value;
 
+    function logout() {
+  // Clear the stored login details from the browser's storage
+  localStorage.removeItem('webdavUrl');
+  localStorage.removeItem('username');
+  localStorage.removeItem('password');
+  isLoggedIn = false;
+
+  // Show the login form and hide the logout button
+  document.getElementById('loginForm').style.display = 'block';
+  document.getElementById('logoutContainer').style.display = 'none';
+}
+
     // Validate input
     if (!webdavServer) {
       showErrorMessage('Please enter a valid WebDAV server IP/domain.');
