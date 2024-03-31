@@ -155,11 +155,9 @@
         <span class="navbar-toggler-icon"></span>
       </button>
       <div class="collapse navbar-collapse" id="navbarNav">
-        <ul class="navbar-nav ms-auto">
-          <li class="nav-item" id="logoutContainer" style="display: none;">
-            <button class="btn btn-danger" onclick="logout()">Logout</button>
-          </li>
-        </ul>
+<div id="logoutContainer" style="display: none;">
+  <button class="btn btn-danger" id="logoutButton">Logout</button>
+</div>
       </div>
     </div>
   </nav>
@@ -243,7 +241,10 @@
     username = document.getElementById('username').value;
     password = document.getElementById('password').value;
 
-    function logout() {
+const logoutButton = document.getElementById('logoutButton');
+logoutButton.addEventListener('click', logout);
+
+function logout() {
   // Clear the stored login details from the browser's storage
   localStorage.removeItem('webdavUrl');
   localStorage.removeItem('username');
