@@ -4,13 +4,17 @@ This is a web-based application that allows users to access their media files st
 
 ## Features:
 
-- Login with WebDAV URL, username, and password
-- Listing of files and directories
-- Opening files with various media players (Infuse, VLC, or in-browser)
-- Navigating through directories
-- Fetching metadata from TMDb for media files
-- Displaying media information (title, description, cover art, etc.)
-- Logout functionality
+- [x] Login with WebDAV protocol, username, password, server IP/domain, port, path
+- [x] Listing of files and directories
+- [x] Opening files with various media players (Infuse, VLC, or in-browser)
+- [x] Navigating through directories
+- [ ] Fetching metadata from TMDb for media files
+- [ ] Displaying media information (title, description, cover art, etc.)
+- [x] Logout functionality
+
+## Known Issues:
+
+The application may encounter CORS (Cross-Origin Resource Sharing) errors and mixed content issues when accessing HTTP and HTTPS resources.
 
 ## Technologies Used:
 
