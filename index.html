@@ -294,13 +294,16 @@
         showLoadingIndicator();
         const url = new URL(webdavUrl);
         url.pathname = `${url.pathname}${currentDirectory ? '/' + currentDirectory : ''}`;
-        const response = await fetch(url.toString(), {
-          method: 'PROPFIND',
-          headers: {
-            'Depth': '1',
-            'Authorization': 'Basic ' + btoa(sanitizeInput(username) + ':' + sanitizeInput(password))
-          }
-        });
+
+        const githubPagesProxyUrl = 'https://api.github.com/proxy?url=';
+const webdavUrl = `${githubPagesProxyUrl}${encodeURIComponent(url.toString())}`;
+const response = await fetch(webdavUrl, {
+  method: 'PROPFIND',
+  headers: {
+    'Depth': '1',
+    'Authorization': 'Basic ' + btoa(sanitizeInput(username) + ':' + sanitizeInput(password))
+  }
+});
 
         if (response.ok) {
       const xml = await response.text();
